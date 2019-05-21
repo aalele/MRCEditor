@@ -52,9 +52,9 @@ int MRCInfoTableModel::columnCount(const QModelIndex& parent) const
 
 QVariant MRCInfoTableModel::data(const QModelIndex& index, int role) const
 {
-	if (index.isValid() == false)
+    if (!index.isValid())
 		return QVariant();
-	if(role == Qt::DisplayRole)
+    if (role == Qt::DisplayRole)
 	{
 		return m_data[index.row()][index.column()];
 	}

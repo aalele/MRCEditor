@@ -78,10 +78,10 @@ class SliceEditorWidget :public QWidget
 	Q_OBJECT
 public:
 	SliceEditorWidget(QWidget * parent = nullptr,
-		bool topSliceVisible = true, 
-		bool rightSliceVisible = true,
-		bool frontSliceVisible = true,
-		AbstractSliceDataModel * model = nullptr);
+    bool topSliceVisible = true,
+    bool rightSliceVisible = true,
+    bool frontSliceVisible = true,
+    AbstractSliceDataModel * model = nullptr);
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
 	bool topSliceVisible() const;
@@ -165,7 +165,7 @@ signals:
 	void rightSliceSelected(const QPoint & point);
 
 	/**
-	 * \brief The signal is emitted when the right slice is selected
+     * \brief The signal is emitted when the front slice is selected
 	 * \param point The selected position on the selected slice
 	 */
 	void frontSliceSelected(const QPoint & point);
@@ -239,7 +239,7 @@ private:
 
 	// Data Members
 	SliceEditorWidgetPrivate * const d_ptr;
-	Q_DECLARE_PRIVATE(SliceEditorWidget);
+    Q_DECLARE_PRIVATE(SliceEditorWidget)
 	AbstractSliceDataModel * m_sliceModel;
 	MarkModel * m_markModel;
 	//main layout

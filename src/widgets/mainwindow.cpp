@@ -450,14 +450,14 @@ void MainWindow::updateActionsAndControlPanelByWidgetFocus(FocusState state) {
 	m_zoomOutAction->setEnabled(state & (FocusInSliceView));
 	m_resetAction->setEnabled(state & (FocusInSliceView | FocusInSliceWidget));
 	m_markAction->setEnabled(state & (FocusInTopSliceView));
-	m_markAction->setEnabled(state & (FocusInTopSliceView));
+    m_markEraseAction->setEnabled(state & (FocusInTopSliceView));
 	m_markSelectionAction->setEnabled(state & (FocusInTopSliceView));		// FocusInRightSliceView FocusInFrontSliceView would be added in the future
-	m_anchorAction->setEnabled(state &(FocusInSliceView));
+    m_anchorAction->setEnabled(state &(FocusInSliceView));
 
 	m_pixelViewAction->setEnabled(state & (FocusInSliceView));
 	m_histogramAction->setEnabled(state & (FocusInSliceView));
 
-	m_volumeControlWidget->setVisible(state & (FocusInVolumeView));
+    m_volumeControlWidget->setVisible(state & (FocusInVolumeView));
 	m_sliceToolControlWidget->setVisible(state & (FocusInSliceWidget | FocusInSliceView));
 	m_sliceControlWidget->setVisible(state&(FocusInVolumeView|FocusInSliceWidget|FocusInSliceView));
 	//m_treeViewDockWidget->setVisible(state&(FocusInSliceWidget | FocusInSliceView));
@@ -492,7 +492,7 @@ void MainWindow::createWidget()
 	setDockOptions(QMainWindow::AnimatedDocks);
 	setDockOptions(QMainWindow::AllowNestedDocks);
 	setDockOptions(QMainWindow::AllowTabbedDocks);
-	setDockNestingEnabled(true);	
+    //setDockNestingEnabled(true);
 
 	auto w = takeCentralWidget();
 	if (w)
@@ -500,7 +500,7 @@ void MainWindow::createWidget()
 
 	// ProfileView
 
-	m_profileView = new ProfileWidget(this);
+    m_profileView = new ProfileWidget(this);
 	m_profileViewDockWidget = new QDockWidget(QStringLiteral("MRC Info"));
 	m_profileViewDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 	m_profileViewDockWidget->setWidget(m_profileView);
@@ -528,10 +528,8 @@ void MainWindow::createWidget()
 	m_imageViewDockWidget->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea | Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
 	m_viewMenu->addAction(m_imageViewDockWidget->toggleViewAction());
 	connect(m_imageViewDockWidget, &QDockWidget::visibilityChanged, [this](bool enable) {if(enable)updateActionsAndControlPanelByWidgetFocus(FocusInSliceWidget); });
-
 	connect(m_imageView->markModel(), &MarkModel::modified, [this]() {setWindowTitle(QStringLiteral("MRC Marker*")); });
 	connect(m_imageView->markModel(), &MarkModel::saved, [this]() {setWindowTitle(QStringLiteral("MRC Marker")); });
-
 	connect(m_imageView, &SliceEditorWidget::viewFocus, this, &MainWindow::sliceViewSelected);
 	connect(m_imageView->topView(), &SliceWidget::selectionChanged, this, &MainWindow::updateActionsBySelectionInSliceView);
 
@@ -697,7 +695,7 @@ void MainWindow::createMenu()
 	m_fileMenu = menuBar()->addMenu(QStringLiteral("File"));
 	m_fileMenu->addAction(m_openAction);
 	m_fileMenu->addAction(m_saveAction);
-	m_fileMenu->addAction(QStringLiteral("Close"),this,&MainWindow::close);
+    m_fileMenu->addAction(QStringLiteral("Close"),this,&MainWindow::close); //lacking icon
 
 	//View menu
 	m_viewMenu = menuBar()->addMenu(QStringLiteral("View"));
@@ -705,10 +703,12 @@ void MainWindow::createMenu()
 
 void MainWindow::createActions()
 {
+    // create toolbar
+    m_toolBar = addToolBar(QStringLiteral("Tools"));
+
 	// open action
 	m_openAction = new QAction(QIcon(":/icons/resources/icons/open.png"), QStringLiteral("Open"), this);
 	m_openAction->setToolTip(QStringLiteral("Open MRC file"));
-	m_toolBar = addToolBar(QStringLiteral("Tools"));
 	m_toolBar->addAction(m_openAction);
 	connect(m_openAction, &QAction::triggered, [this]() {
 		open(QFileDialog::getOpenFileName(this,
@@ -719,7 +719,6 @@ void MainWindow::createActions()
 
 	//save mark action
 	m_saveAction = new QAction(QIcon(":/icons/resources/icons/save_as.png"), QStringLiteral("Save Mark"), this);
-
 	m_saveAction->setToolTip(QStringLiteral("Save Mark"));
 	m_toolBar->addAction(m_saveAction);
 	connect(m_saveAction, &QAction::triggered, this, &MainWindow::saveMark);

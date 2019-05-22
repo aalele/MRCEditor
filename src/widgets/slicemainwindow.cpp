@@ -15,7 +15,7 @@ SliceMainWindow::SliceMainWindow(QWidget *parent) : QMainWindow(parent)
 {
 	setWindowTitle("Slice View");
 
-	m_sliceEditorWidget = new SliceEditorWidget(this, true, true, true, nullptr);
+    m_sliceEditorWidget = new SliceEditorWidget(this, nullptr);
 
 	m_sliceControlWidget = new SliceControlWidget(m_sliceEditorWidget, nullptr, this);
 	m_controlDockWidget = new QDockWidget(QStringLiteral("Control Pannel"), this);

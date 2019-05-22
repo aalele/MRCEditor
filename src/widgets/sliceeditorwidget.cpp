@@ -273,17 +273,11 @@ void SliceEditorWidget::installMarkModel(MarkModel* model)
  * \param model Slice data model that is used to display
  */
 
-SliceEditorWidget::SliceEditorWidget(QWidget *parent,
-	bool topSliceVisible,
-	bool rightSliceVisible,
-	bool frontSliceVisible,
-	AbstractSliceDataModel * model) :
+SliceEditorWidget::SliceEditorWidget(QWidget *parent, AbstractSliceDataModel * model) :
 	QWidget(parent),
-	m_markModel(nullptr),
+    d_ptr(new SliceEditorWidgetPrivate),
 	m_sliceModel(model),
-	//m_sliceTimer(nullptr),
-	d_ptr(new SliceEditorWidgetPrivate)
-	//m_panel(nullptr)
+    m_markModel(nullptr)
 {
 	m_layout = new QGridLayout;
 	//m_layout->setContentsMargins(0, 0, 0, 0);
@@ -1124,29 +1118,4 @@ void SliceEditorWidget::updateMarks(SliceType type)
 	}
 	break;
 	}
-}
-
-SliceScene::SliceScene(QObject *parent) :QGraphicsScene(parent)
-{
-
-}
-
-void SliceScene::mousePressEvent(QGraphicsSceneMouseEvent * event)
-{
-	QGraphicsScene::mousePressEvent(event);
-}
-
-void SliceScene::mouseMoveEvent(QGraphicsSceneMouseEvent * event)
-{
-	QGraphicsScene::mouseMoveEvent(event);
-}
-
-void SliceScene::mouseReleaseEvent(QGraphicsSceneMouseEvent * event)
-{
-	QGraphicsScene::mouseReleaseEvent(event);
-}
-
-void SliceScene::wheelEvent(QGraphicsSceneWheelEvent * event)
-{
-	QGraphicsScene::wheelEvent(event);
 }

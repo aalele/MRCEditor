@@ -139,3 +139,5 @@ SOURCES +=$${MY_PREFIX_DIR}/widgets/doubleslider.cpp \
     $${MY_PREFIX_DIR}/mathematics/geometry.cpp \ 
     src/model/autommrcdatamodel.cpp
 RESOURCES += resources.qrc
+
+QMAKE_CXXFLAGS += -Wno-padded

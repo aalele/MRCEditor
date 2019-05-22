@@ -42,30 +42,20 @@ class CategoryControlWidget;
 class CategoryInfo;
 class StrokeMarkItem;
 
-class SliceScene :public QGraphicsScene
-{
-public:
-	SliceScene(QObject * parent = nullptr);
-protected:
-	void mousePressEvent(QGraphicsSceneMouseEvent* event) Q_DECL_OVERRIDE;
-	void mouseMoveEvent(QGraphicsSceneMouseEvent* event) Q_DECL_OVERRIDE;
-	void mouseReleaseEvent(QGraphicsSceneMouseEvent* event) Q_DECL_OVERRIDE;
-	void wheelEvent(QGraphicsSceneWheelEvent* event) Q_DECL_OVERRIDE;
-};
 
-
-struct SliceState {
-	int currentTopSliceIndex;
-	int currentRightSliceIndex;
-	int currentFrontSliceIndex;
-	QString currentCategory;
-	SliceState() :currentTopSliceIndex(0)
-		, currentRightSliceIndex(0)
-		, currentFrontSliceIndex(0)
-	{}
-};
 
 class SliceEditorWidgetPrivate {
+private:
+    struct SliceState {
+        int currentTopSliceIndex = 0;
+        int currentRightSliceIndex = 0;
+        int currentFrontSliceIndex = 0;
+
+        int NoPaddedWarning;
+
+        QString currentCategory;
+
+    };
 public:
 	SliceEditorWidgetPrivate():
 	state(new SliceState)
@@ -77,11 +67,7 @@ class SliceEditorWidget :public QWidget
 {
 	Q_OBJECT
 public:
-	SliceEditorWidget(QWidget * parent = nullptr,
-    bool topSliceVisible = true,
-    bool rightSliceVisible = true,
-    bool frontSliceVisible = true,
-    AbstractSliceDataModel * model = nullptr);
+    SliceEditorWidget(QWidget * parent = nullptr, AbstractSliceDataModel * model = nullptr);
 
 	bool eventFilter(QObject* watched, QEvent* event) override;
 	bool topSliceVisible() const;

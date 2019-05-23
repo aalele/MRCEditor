@@ -386,9 +386,7 @@ void MainWindow::pixelViewActionTriggered()
 	SliceType type;
 	QString windowTitle;
 	std::function<void(const QPoint&)> selectSignal;
-	auto a = &SliceEditorWidget::topSliceSelected;
 	
-
 	if(m_currentFocus == FocusInTopSliceView) {
 		type = SliceType::Top;
 		windowTitle = QStringLiteral("TopSlice PixelView");
@@ -534,7 +532,7 @@ void MainWindow::createWidget()
 	connect(m_imageView->topView(), &SliceWidget::selectionChanged, this, &MainWindow::updateActionsBySelectionInSliceView);
 
 	// VolumeWidget
-	m_volumeView = new RenderWidget(nullptr, nullptr,this);
+    m_volumeView = new RenderWidget(nullptr, nullptr,this);
 	m_volumeView->installEventFilter(this);
 	m_volumeView->setFocusPolicy(Qt::ClickFocus);
 	m_volumeViewDockWidget = new QDockWidget(QStringLiteral("Volume View"));

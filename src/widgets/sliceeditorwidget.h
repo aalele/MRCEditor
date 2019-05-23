@@ -42,20 +42,18 @@ class CategoryControlWidget;
 class CategoryInfo;
 class StrokeMarkItem;
 
+struct SliceState {
+    int currentTopSliceIndex = 0;
+    int currentRightSliceIndex = 0;
+    int currentFrontSliceIndex = 0;
 
+    int NoPaddedWarning;
+
+    QString currentCategory;
+
+};
 
 class SliceEditorWidgetPrivate {
-private:
-    struct SliceState {
-        int currentTopSliceIndex = 0;
-        int currentRightSliceIndex = 0;
-        int currentFrontSliceIndex = 0;
-
-        int NoPaddedWarning;
-
-        QString currentCategory;
-
-    };
 public:
 	SliceEditorWidgetPrivate():
 	state(new SliceState)

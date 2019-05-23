@@ -267,9 +267,6 @@ void SliceEditorWidget::installMarkModel(MarkModel* model)
  * \brief Constructs an instance of \a SliceEditorWidget
  *
  * \param parent The parent widget pointer
- * \param topSliceVisible The visibility of the top slice widget
- * \param rightSliceVisible The visibility of the right slice widget
- * \param frontSliceVisible The visibility of the front slice widget
  * \param model Slice data model that is used to display
  */
 
@@ -279,22 +276,17 @@ SliceEditorWidget::SliceEditorWidget(QWidget *parent, AbstractSliceDataModel * m
 	m_sliceModel(model),
     m_markModel(nullptr)
 {
+    //lay out
 	m_layout = new QGridLayout;
-	//m_layout->setContentsMargins(0, 0, 0, 0);
-
 	m_topView = new SliceWidget(this);
 	m_topView->installEventFilter(this);
 	m_topView->setNavigationViewEnabled(true);
-
 	m_rightView = new SliceWidget(this);
 	m_rightView->installEventFilter(this);
 	m_rightView->setNavigationViewEnabled(false);
-
 	m_frontView = new SliceWidget(this);
 	m_frontView->installEventFilter(this);
 	m_frontView->setNavigationViewEnabled(false);
-
-
 	m_toolButton = new QToolButton(this);
 	m_toolButton->setText(QStringLiteral("Advanced"));
 	m_toolButton->setPopupMode(QToolButton::InstantPopup);
@@ -305,6 +297,13 @@ SliceEditorWidget::SliceEditorWidget(QWidget *parent, AbstractSliceDataModel * m
 	hideAction->setChecked(m_topView->navigationViewEnabled());
 	connect(hideAction, &QAction::triggered, [this](bool checked) {m_topView->setNavigationViewEnabled(checked); });
 	menu->addAction(hideAction);
+    updateActions();
+    setWindowTitle(QStringLiteral("Slice Editor"));
+    m_layout->addWidget(m_topView, 0, 0, 1, 1);
+    m_layout->addWidget(m_rightView, 0, 1, 1, 1, Qt::AlignLeft);
+    m_layout->addWidget(m_frontView, 1, 0, 1, 1, Qt::AlignTop);
+    m_layout->addWidget(m_toolButton, 1, 1, 1, 1, Qt::AlignCenter);
+    setLayout(m_layout);
 
 	// Connections 
 	connect(m_topView, QOverload<const QPoint &>::of(&SliceWidget::sliceSelected), this, &SliceEditorWidget::topSliceSelected);
@@ -330,13 +329,7 @@ SliceEditorWidget::SliceEditorWidget(QWidget *parent, AbstractSliceDataModel * m
 	connect(m_frontView, QOverload<const QPoint &>::of(&SliceWidget::sliceSelected), this, &SliceEditorWidget::_slot_frontViewSliceSelection);
 
 	connect(this, &SliceEditorWidget::markSelected, this, &SliceEditorWidget::_slot_markSelected);
-	updateActions();
-	setWindowTitle(QStringLiteral("Slice Editor"));
-	m_layout->addWidget(m_topView, 0, 0, 1, 1);
-	m_layout->addWidget(m_rightView, 0, 1, 1, 1, Qt::AlignLeft);
-	m_layout->addWidget(m_frontView, 1, 0, 1, 1, Qt::AlignTop);
-	m_layout->addWidget(m_toolButton, 1, 1, 1, 1, Qt::AlignCenter);
-	setLayout(m_layout);
+
 }
 /**
  * \brief Reimplemented from QWidget::eventFilter
@@ -817,7 +810,7 @@ AbstractSliceDataModel* SliceEditorWidget::takeSliceModel(AbstractSliceDataModel
 	updateActions();
 	emit dataModelChanged();
 	resetZoom(true);
-	return t;
+    return t;
 }
 
 /**
@@ -970,65 +963,60 @@ void SliceEditorWidget::setOperation(SliceType type, int opt)
  */
 void SliceEditorWidget::setSliceIndex(SliceType type, int index)
 {
-	//
 	Q_ASSERT_X(m_sliceModel, "SliceEditorWidget::setSliceIndex", "null pointer");
+    Q_ASSERT_X(type == SliceType::Top ||type == SliceType::Right || type == SliceType::Front,
+        "ImageView::updateSlice", "SliceType error.");
+
 	SliceWidget * view = nullptr;
-	std::function<QImage(int)> sliceGetter;
+    std::function<QImage(int)> sliceGetter;
 	const MarkModel::MarkSliceList * list = nullptr;
 	Q_D(SliceEditorWidget);
 	switch (type)
 	{
-	case SliceType::Top:
-	{
-		if (index > m_sliceModel->topSliceCount() - 1)
-			return;
-		view = m_topView;
-		sliceGetter = std::bind(&AbstractSliceDataModel::topSlice, m_sliceModel, std::placeholders::_1);
-		if (m_markModel != nullptr)
-			list = &m_markModel->topSliceVisibleMarks();
-		d->state->currentTopSliceIndex = index;
-		emit topSliceChanged(index);
-		break;
-	}
-
-	case SliceType::Right:
-	{
-		if (index > m_sliceModel->rightSliceCount() - 1)
-			return;
-		view = m_rightView;
-		sliceGetter = std::bind(&AbstractSliceDataModel::rightSlice, m_sliceModel, std::placeholders::_1);
-		if (m_markModel != nullptr)
-			list = &m_markModel->rightSliceVisibleMarks();
-		d->state->currentRightSliceIndex = index;
-		emit rightSliceChanged(index);
-		break;
-	}
-	case SliceType::Front:
-	{
-		if (index > m_sliceModel->frontSliceCount() - 1)
-			return;
-		view = m_frontView;
-		sliceGetter = std::bind(&AbstractSliceDataModel::frontSlice, m_sliceModel, std::placeholders::_1);
-		if (m_markModel != nullptr)
-			list = &m_markModel->frontSliceVisibleMarks();
-		d->state->currentFrontSliceIndex = index;
-		emit frontSliceChanged(index);
-		break;
-	}
-
-	default:
-		Q_ASSERT_X(false,
-			"ImageView::updateSlice", "SliceType error.");
-		return;
+        case SliceType::Top:
+        {
+            if (index > m_sliceModel->topSliceCount() - 1)
+                return;
+            view = m_topView;
+            sliceGetter = std::bind(&AbstractSliceDataModel::topSlice, m_sliceModel, std::placeholders::_1);
+            if (m_markModel != nullptr)
+                list = &m_markModel->topSliceVisibleMarks();
+            d->state->currentTopSliceIndex = index;
+            emit topSliceChanged(index);
+            break;
+        }
+        case SliceType::Right:
+        {
+            if (index > m_sliceModel->rightSliceCount() - 1)
+                return;
+            view = m_rightView;
+            sliceGetter = std::bind(&AbstractSliceDataModel::rightSlice, m_sliceModel, std::placeholders::_1);
+            if (m_markModel != nullptr)
+                list = &m_markModel->rightSliceVisibleMarks();
+            d->state->currentRightSliceIndex = index;
+            emit rightSliceChanged(index);
+            break;
+        }
+        case SliceType::Front:
+        {
+            if (index > m_sliceModel->frontSliceCount() - 1)
+                return;
+            view = m_frontView;
+            sliceGetter = std::bind(&AbstractSliceDataModel::frontSlice, m_sliceModel, std::placeholders::_1);
+            if (m_markModel != nullptr)
+                list = &m_markModel->frontSliceVisibleMarks();
+            d->state->currentFrontSliceIndex = index;
+            emit frontSliceChanged(index);
+            break;
+        }
 	}
 	Q_ASSERT_X(static_cast<bool>(sliceGetter) == true,
 		"ImageView::updateSlice", "null function");
 
 	view->setImage(sliceGetter(index));
 
-	view->clearSliceMarks();		// clear previous marks
-
-	// Set Marks
+    // clear previous marks then set the marks
+    view->clearSliceMarks();
 	if (list != nullptr)
 		view->setMarks((*list)[index]);
 }

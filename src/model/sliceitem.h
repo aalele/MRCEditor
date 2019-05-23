@@ -12,10 +12,10 @@ class SliceItem :public QGraphicsPixmapItem
 {
 public:
 	enum { Type = UserType + Slice };
-	SliceItem(QGraphicsItem * parent = nullptr) :QGraphicsPixmapItem(parent) {}
+    SliceItem(QGraphicsItem * parent = nullptr) : QGraphicsPixmapItem(parent) {}
 	SliceItem(const QPixmap & pixmap, QGraphicsItem * parent = nullptr) :QGraphicsPixmapItem(pixmap, parent) {}
 	int type() const Q_DECL_OVERRIDE { return Type; }
-	virtual  ~SliceItem() = default;
+    virtual  ~SliceItem()override = default;
 protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent* event) Q_DECL_OVERRIDE;
 	void mouseMoveEvent(QGraphicsSceneMouseEvent* event) Q_DECL_OVERRIDE;

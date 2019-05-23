@@ -10,17 +10,17 @@
 
 //#define DEBUG_MARK_ERASE
 
-SliceWidget::SliceWidget(QWidget *parent) :QGraphicsView(parent),
-//m_scaleFactor(0.5),
-m_currentPaintingSlice(nullptr),
-m_paint(false),
-m_selection(false),
-m_pen(QPen(Qt::black, 5, Qt::SolidLine)),
-m_slice(nullptr),
-m_paintingItem(nullptr),
-m_state(Operation::None),
-m_anchorItem(nullptr),
-m_paintNavigationView(false)
+SliceWidget::SliceWidget(QWidget *parent) :
+    QGraphicsView(parent),
+    m_paintNavigationView(false),
+    m_pen(QPen(Qt::black, 5, Qt::SolidLine)),
+    m_slice(nullptr),
+    m_currentPaintingSlice(nullptr),
+    m_paintingItem(nullptr),
+    m_anchorItem(nullptr),
+    m_paint(false),
+    m_selection(false),
+    m_state(Operation::None)
 {
 	setScene(new QGraphicsScene(this));
 	connect(scene(), &QGraphicsScene::selectionChanged, this, &SliceWidget::selectionChanged);
@@ -402,7 +402,7 @@ void SliceWidget::setImage(const QImage& image)
 	}
 	else
 	{
-		m_slice->setPixmap(QPixmap::fromImage(image));
+            m_slice->setPixmap(QPixmap::fromImage(image));
 	}
 	//setDefaultZoom();
 

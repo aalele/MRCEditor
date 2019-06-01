@@ -7,7 +7,7 @@
 class AbstractSliceDataModel
 {
 public:
-	AbstractSliceDataModel(int nTop, int nRight, int nFront);
+    AbstractSliceDataModel(int nTop, int nRight, int nFront);
 
 	virtual int topSliceCount()const = 0;
 	virtual int rightSliceCount()const = 0;

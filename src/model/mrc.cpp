@@ -137,7 +137,8 @@ bool MRC::open(const std::string &fileName)
 		}
 		if (noError) 
 		{
-			noError = readDataFromFileHelper(inFile);
+            noError = readDataFromQFileHelper(fileName);
+            //noError = readDataFromFileHelper(inFile);
 		}
 		m_opened = noError;
 	}
@@ -282,18 +283,6 @@ float MRC::maxValue() const
 {
 	return m_header.dmax;
 }
-
-//const unsigned char *MRC::data() const
-//{
-//	return m_d->data;
-//}
-//
-//unsigned char *MRC::data()
-//{
-//    return const_cast<unsigned char*>(
-//                static_cast<const MRC *>(this)->data()
-//                );
-//}
 
 MRC::DataType MRC::dataType() const
 {
@@ -565,6 +554,50 @@ std::string MRC::propertyInfoString(const MRCHeader *header) const
 	return ss.str();
 }
 
+bool MRC::readDataFromQFileHelper(const std::string& fileName)
+{
+    //bool noError = true;
+    file.setFileName(QString::fromStdString((fileName)));
+    file.open(QIODevice::ReadWrite);
+    if (file.size() != 0) {
+        MRCInt32 offset = MRC_HEADER_SIZE + m_header.nsymbt;
+        const size_t dataCount = static_cast<size_t>(m_header.nx)*static_cast<size_t>(m_header.ny)*static_cast<size_t>(m_header.nz);		// size_t is important
+        const size_t elemSize = typeSize(dataType());
+        std::cout  << "file size: " << file.size() << " data count :" << dataCount << " element size:" << elemSize << std::endl;
+        uchar *fpr = file.map(offset, dataCount * elemSize);
+        if(!fpr)
+        {
+            std::cerr << "File map failed\n" << __LINE__ << std::endl;
+            return false;
+        }
+        this->m_d = MRCDataPrivate::create(fpr);
+        //big endian
+        if(m_header.stamp[0] == 0x11 && m_header.stamp[1] == 0x11) {
+            if (MRC_MODE_FLOAT == m_header.mode) {
+                auto d = reinterpret_cast<MRCFloat*>(m_d->data);
+                for(size_t i = 0;i < dataCount;i++)
+                    d[i] = reverseEndian(d[i]);
+            } else if (MRC_MODE_SHORT == m_header.mode || MRC_MODE_USHORT == m_header.mode) {
+                auto d = reinterpret_cast<uint16_t*>(m_d->data);
+                for (size_t i = 0; i < dataCount; i++)
+                    d[i] = reverseByte(static_cast<uint16_t>(d[i]));
+            }
+        }
+
+        if (MRC_MODE_BYTE != m_header.mode
+                && MRC_MODE_FLOAT != m_header.mode
+                && MRC_MODE_SHORT != m_header.mode
+                && MRC_MODE_USHORT != m_header.mode)
+        {
+            std::cerr << "Unsupported Format now.>>> " << __LINE__ << std::endl;
+            return false;
+        }
+        return true;
+    }
+    else
+        return false;
+}
+
 bool MRC::readDataFromFileHelper(std::ifstream& in)
 {
 	bool noError = true;
@@ -580,97 +613,42 @@ bool MRC::readDataFromFileHelper(std::ifstream& in)
 		const size_t dataCount = static_cast<size_t>(m_header.nx)*static_cast<size_t>(m_header.ny)*static_cast<size_t>(m_header.nz);		// size_t is important
 		const auto elemSize = typeSize(dataType());
 		std::cout << "data count :" << dataCount << " element size:" << elemSize << std::endl;
-		
-		if (MRC_MODE_BYTE == m_header.mode) {
-			//transform into byte8 type
-			//this->m_d = MRCDataPrivate::create(m_header.nx, m_header.ny, m_header.nz, elemSize);
+        this->m_d = MRCDataPrivate::create(m_header.nx, m_header.ny, m_header.nz, elemSize);
+        if (this->m_d == nullptr)
+        {
+            std::cerr << "Create data pointer failed\n" << __LINE__ << std::endl;
+            return false;
+        }
+        in.read(reinterpret_cast<char*>(m_d->data), dataCount*elemSize);
+        const auto readCount = in.gcount();
+        if (readCount != dataCount*elemSize)
+        {
+            std::cerr << "Runtime Error: Reading size error. Read Count:" << readCount << ". DataCount: " << dataCount << ".>>> " << __LINE__ << std::endl;
+            noError = false;
+        }
+        //big endian
+        if(m_header.stamp[0] == 0x11 && m_header.stamp[1] == 0x11) {
+            if (MRC_MODE_FLOAT == m_header.mode) {
+                auto d = reinterpret_cast<MRCFloat*>(m_d->data);
+                for(size_t i = 0;i < dataCount;i++)
+                    d[i] = reverseEndian(d[i]);
+            } else if (MRC_MODE_SHORT == m_header.mode || MRC_MODE_USHORT == m_header.mode) {
+                auto d = reinterpret_cast<uint16_t*>(m_d->data);
+                for (size_t i = 0; i < dataCount; i++)
+                    d[i] = reverseByte(static_cast<uint16_t>(d[i]));
+            }
+        }
 
-			//const auto begin = in.tellg();
-			//in.seekg(0, in.end);
-			//const auto end = in.tellg();
-			//std::cout << "Max file size supported:"<<end-begin<<" bytes.\n";
-			//in.seekg(MRC_HEADER_SIZE, in.beg);
-			this->m_d = MRCDataPrivate::create(m_header.nx, m_header.ny, m_header.nz, elemSize);
-			in.read((char*)m_d->data, dataCount*elemSize);
-			const auto readCount = in.gcount();
-			if (readCount != dataCount * elemSize) {
-				std::cerr << "Runtime Error: Reading size error.>>>" << __LINE__ << std::endl;
-				noError = false;
-			}
-		}
-		else if (MRC_MODE_FLOAT == m_header.mode) {
-			//float * buffer = new float[m_mrcDataSize*sizeof(float)];
-			this->m_d = MRCDataPrivate::create(m_header.nx, m_header.ny, m_header.nz, elemSize);
-			if (this->m_d == nullptr)
-			{
-				std::cerr << "Create data pointer failed\n" << __LINE__ << std::endl;
-				return false;
-			}
-			//std::unique_ptr<MRCFloat[]> buffer(new float[dataCount]);
-			in.read((char*)m_d->data, dataCount*elemSize);
-			const auto readCount = in.gcount();
-			//const size_t readCount = fread(this->m_d->data, elemSize, dataCount, fp);
-			if (readCount != dataCount*elemSize)
-			{
-				std::cerr << "Runtime Error: Reading size error. Read Count:" << readCount << ". DataCount: " << dataCount << ".>>> " << __LINE__ << std::endl;
-				noError = false;
-			}
-			if (m_header.stamp[0] == 0x11 && m_header.stamp[1] == 0x11) // big endian
-			{
-				std::cout << "Big endian\n";
-				auto d = reinterpret_cast<MRCFloat*>(m_d->data);
-				for(int i = 0;i<dataCount;i++)
-				{
-					d[i] = reverseEndian(d[i]);
-				}
-
-			}
-			m_header.mode = MRC_MODE_FLOAT;
-		}
-		else if (MRC_MODE_SHORT == m_header.mode || MRC_MODE_USHORT == m_header.mode) {
-			//std::unique_ptr<MRCInt16[]> buffer(new MRCInt16[dataCount * sizeof(MRCInt16)]);
-			this->m_d = MRCDataPrivate::create(m_header.nx, m_header.ny, m_header.nz, typeSize(DataType::Integer16));
-			if(!this->m_d)
-			{
-				std::cerr << "Create data pointer failed. " << __LINE__ << std::endl;
-				noError = true;
-				return false;
-			}
-			in.read(reinterpret_cast<char*>(m_d->data), dataCount*elemSize);
-			const auto readCount = in.gcount();
-			//const size_t readCount = fread(buffer.get(), elemSize, dataCount, fp);
-			if (readCount != dataCount * elemSize) 
-			{
-				std::cerr << "Runtime Error: Reading size error.>>> " << __LINE__ << std::endl;
-				noError = false;
-			}
-
-			if (m_header.stamp[0] == 0x11 && m_header.stamp[1] == 0x11) // big endian
-			{
-				std::cout << "Big endian\n";
-				auto d = reinterpret_cast<uint16_t*>(m_d->data);
-				for (int i = 0; i < dataCount; i++)
-				{
-					d[i] = reverseByte((uint16_t)d[i]);
-				}
-			}
-
-			//if (true == noError) {
-			//	const auto dmin = static_cast<MRCInt16>(m_header.dmin);
-			//	const auto dmax = static_cast<MRCInt16>(m_header.dmax);
-			//	const auto k = 256.0 / (dmax - dmin);
-			//	for (size_t i = 0; i < dataCount; i++)
-			//		static_cast<MRCInt8*>(m_d->data)[i] = static_cast<MRCInt16>(k*buffer[i]);
-			//}
-			//m_header.mode = MRC_MODE_BYTE;
-		}
-		else 
+        if (MRC_MODE_BYTE != m_header.mode
+                && MRC_MODE_FLOAT != m_header.mode
+                && MRC_MODE_SHORT != m_header.mode
+                && MRC_MODE_USHORT != m_header.mode)
 		{
 			std::cerr << "Unsupported Format now.>>> " << __LINE__ << std::endl;
 			return false;
 		}
+        return true;
 	}
-
 	return (noError);
 }
 

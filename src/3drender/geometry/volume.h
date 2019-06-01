@@ -87,7 +87,7 @@ class Volume
 	std::unique_ptr<unsigned char[]> m_data;
 	std::unique_ptr<double[]> m_isoStat;
 	std::size_t m_bytes;
-	int m_xSize, m_ySize, m_zSize;
+    std::size_t m_xSize, m_ySize, m_zSize;
 	double m_maxIsoValue;
 public:
 	Volume(const void * data,

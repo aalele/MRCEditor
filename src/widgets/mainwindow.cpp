@@ -28,6 +28,7 @@
 #include "widgets/pixelwidget.h"
 #include "widgets/histogramwidget.h"
 
+#include <ctime>
 
 
 //QSize imageSize(500, 500);
@@ -92,7 +93,8 @@ void MainWindow::initializeForVolumeViewWindow()
 
 void MainWindow::open(const QString& fileName)
 {
-
+    clock_t startT, endT;
+    startT = clock();
 	if (fileName.isEmpty())
 		return;
 	auto name = fileName.mid(fileName.lastIndexOf('/') + 1);
@@ -100,7 +102,8 @@ void MainWindow::open(const QString& fileName)
 	const auto markModel = m_imageView->markModel();
 
 	if (markModel != nullptr && markModel->dirty())
-	{
+    {
+        //TODO
 		const auto button = QMessageBox::warning(this,
 			QStringLiteral("Warning"),
 			QStringLiteral("Marks have not been saved.Do you want to save them before open a new slice data?"),
@@ -125,6 +128,8 @@ void MainWindow::open(const QString& fileName)
 	//m_treeView->setSelectionModel(m_imageView->markModel()->selctionModelOfThisModel());
 	auto d = m_profileView->takeModel(infoModel);
 	d->deleteLater();
+    endT = clock();
+    std::cout << "The run time of mainwindow::open() is: " <<(double)(endT - startT) / CLOCKS_PER_SEC << "s" << std::endl;
 }
 
 bool MainWindow::saveMark()

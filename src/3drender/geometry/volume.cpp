@@ -14,45 +14,42 @@
 
 
 Volume::Volume(const void * data, size_t xSize, size_t ySize, size_t zSize, const VolumeFormat& fmt) :
-	m_xSize(xSize)
-	, m_ySize(ySize)
-	, m_zSize(zSize)
-	, m_fmt(fmt)
-	, m_data(nullptr)
-	, m_isoStat(nullptr)
-	, m_bytes(0)
+    m_fmt(fmt)
+    , m_data(nullptr)
+    , m_isoStat(nullptr)
+    , m_bytes(0)
+    ,m_xSize(xSize)
+    , m_ySize(ySize)
+    , m_zSize(zSize)
 {
-	auto voxelChannel = 0;
+    size_t voxelChannel = 0;
 	switch (m_fmt.fmt)
 	{
-	case VoxelFormat::Grayscale:voxelChannel = 1; break;
-	case VoxelFormat::RGB:voxelChannel = 3; break;
-	case VoxelFormat::RGBA:voxelChannel = 4; break;
+        case VoxelFormat::Grayscale:voxelChannel = 1; break;
+        case VoxelFormat::RGB:voxelChannel = 3; break;
+        case VoxelFormat::RGBA:voxelChannel = 4; break;
 	}
-	//size_t bytes = 0;
 
 	switch (m_fmt.type)
 	{
-	case VoxelType::UInt8:
-	{
-		const auto d = new unsigned char[xSize*ySize*zSize*voxelChannel];
+        case VoxelType::UInt8:
+        {
+            const auto d = new unsigned char[xSize*ySize*zSize*voxelChannel];
+            m_data.reset(reinterpret_cast<unsigned char*>(d));
+            m_isoStat.reset(new double[256]);
+            m_bytes = xSize * ySize*zSize * sizeof(unsigned char)*voxelChannel;
+        }
 
+        break;
+        case VoxelType::Float32:
+        {
+            const auto d = new float[xSize*ySize*zSize*voxelChannel];
+            m_data.reset(reinterpret_cast<unsigned char*>(d));
+            m_isoStat.reset(new double[256]);
+            m_bytes = xSize * ySize * zSize * sizeof(float)*voxelChannel;
+        }
 
-		m_data.reset(reinterpret_cast<unsigned char*>(d));
-		m_isoStat.reset(new double[256]);
-		m_bytes = xSize * ySize*zSize * sizeof(unsigned char)*voxelChannel;
-	}
-
-	break;
-	case VoxelType::Float32:
-	{
-		const auto d = new float[xSize*ySize*zSize*voxelChannel];
-		m_data.reset(reinterpret_cast<unsigned char*>(d));
-		m_isoStat.reset(new double[256]);
-		m_bytes = xSize * ySize * zSize * sizeof(float)*voxelChannel;
-	}
-
-	break;
+        break;
 	}
 
 	if (m_data != nullptr)
@@ -60,8 +57,8 @@ Volume::Volume(const void * data, size_t xSize, size_t ySize, size_t zSize, cons
 		std::memcpy(m_data.get(), data, m_bytes);
 	}
 
-	if (m_isoStat != nullptr)
-		calcIsoStat();
+    if (m_isoStat != nullptr)
+        calcIsoStat();
 }
 
 Volume::Volume(const Volume& vol)
@@ -154,44 +151,43 @@ void Volume::blend(
 void Volume::calcIsoStat() {
 	memset(m_isoStat.get(), 0, sizeof(double) * 256);
 
-	//for(int i = 0; i < m_zSize; ++i) {
-	//	for(int j = 0; j < m_ySize; ++j) {
-	//		for(int k = 0; k < m_xSize; ++k) {
-	//			int index = i * m_xSize * m_ySize + j * m_xSize + k;
-	//			int value = m_data.get()[index];
-	//			isoStat[value] += 1.0;
-	//		}
-	//	}
-	//}
 	// We don't support histogram for float type volume data
 	if (m_fmt.type == VoxelType::Float32)
 		return;
 
+    size_t nCube = 128; //The bigger the nCube is, the accurater the statistical results are
+    size_t xStep = (m_xSize < nCube ? 1 : m_xSize / nCube);
+    size_t yStep = (m_ySize < nCube ? 1 : m_ySize / nCube);
+    size_t zStep = (m_zSize < nCube ? 1 : m_zSize / nCube);
 #pragma omp parallel for
-	for (int i = 0; i < m_zSize; ++i) {
+    for (size_t i = 0; i < m_zSize; i += zStep) {
 		const auto zNext = (i < m_zSize - 1) ? m_xSize * m_ySize : 0;
-		for (int j = 0; j < m_ySize; ++j) {
+        for (size_t j = 0; j < m_ySize; j += yStep) {
 			const auto yNext = (j < m_ySize - 1) ? m_xSize : 0;
-			for (int k = 0; k < m_xSize; ++k) {
+            for (size_t k = 0; k < m_xSize; k += xStep) {
 				const auto index = i * m_xSize * m_ySize + j * m_xSize + k;
 				const int xNext = (k < m_xSize - 1) ? 1 : 0;
-				const int f000 = m_data.get()[index];
-				const int f100 = m_data.get()[index + xNext];
-				const int f010 = m_data.get()[index + yNext];
-				const int f001 = m_data.get()[index + zNext];
-				const int f101 = m_data.get()[index + xNext + zNext];
-				const int f011 = m_data.get()[index + yNext + zNext];
-				const int f110 = m_data.get()[index + xNext + yNext];
-				const int f111 = m_data.get()[index + xNext + yNext + zNext];
-				const int minValue = trippleMin(f000, f100, trippleMin(f010, f001, trippleMin(f101, f011, trippleMin(f110, f111, 255))));
-				const int maxValue = trippleMax(f000, f100, trippleMax(f010, f001, trippleMax(f101, f011, trippleMax(f110, f111, 0))));
-				for (auto m = minValue; m <= maxValue; ++m) {
-					m_isoStat[m] += 1.0;
-				}
+                int minValue, maxValue;
+                minValue = maxValue = m_data.get()[index];
+                for(int dir = 1; dir < 8; ++dir) {
+                    int x = dir % 2;
+                    int y = (dir >> 1) % 2;
+                    int z = (dir >> 2) % 2;
+                    auto tmp = m_data.get()[index + x*xNext + y*yNext + z*zNext];
+                    if(tmp>maxValue) {
+                        maxValue = tmp;
+                        continue;
+                    }
+                    if(tmp<minValue) {
+                        minValue = tmp;
+                        continue;
+                    }
+                }
+                for(auto m=minValue;m<=maxValue;++m)
+                    m_isoStat[m] += 1.0;
 			}
 		}
 	}
-	//qDebug() << "??";
 	m_maxIsoValue = m_isoStat[1];
 	for (int i = 2; i < 256; ++i)
 		m_maxIsoValue = std::max(m_maxIsoValue, m_isoStat[i]);

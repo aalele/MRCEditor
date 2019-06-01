@@ -47,7 +47,7 @@ QImage MRCDataModel::originalTopSlice(int index) const
 
 	const size_t width = m_d->width();
 	const size_t height = m_d->height();
-	QImage newImage(width, height, QImage::Format_Grayscale8);
+    QImage newImage(width, height, QImage::Format_Grayscale8);
 
 
 	// For 32-bit aligned requirement of the QImage, 
@@ -111,7 +111,7 @@ QImage MRCDataModel::originalTopSlice(int index) const
 			}
 		}
 
-	}
+    }
 	break;
 	}
 	adjustImage(newImage);
@@ -283,7 +283,6 @@ inline int MRCDataModel::rightSliceCount() const
 {
 	return m_d->width();
 }
-
 inline int MRCDataModel::frontSliceCount() const
 {
 	return m_d->height();
@@ -364,6 +363,9 @@ void MRCDataModel::preCalc()
 		const auto dmin = m_d->minValue();
 		const auto dmax = m_d->maxValue();
 		const auto data = m_d->data<MRC::MRCFloat>();
+        if(!data) {
+            std::cout << "data is nullptr!" <<std::endl;
+        }
 		Q_ASSERT_X(data != nullptr, "MRCDataModel::originalFrontSlice", "type error");
 
 #ifdef _OPENMP

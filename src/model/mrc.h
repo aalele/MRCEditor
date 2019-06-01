@@ -9,6 +9,9 @@
 #include <qlist.h>
 #include <tuple>
 
+#include <QFile>
+#include <QString>
+
 /*
 * http://www.sciencedirect.com/science/article/pii/S104784771500074X
 * The pdf above shows the details of the MRC 2014 format, and
@@ -424,7 +427,7 @@ public:
 	* @brief Constructor receiving a path string
 	* @param fileName	mrc file path
 	*/
-	explicit MRC(const std::string & fileName);
+    explicit MRC(const std::string & fileName);
 	//image and image stack
 
 	MRC(void * data,
@@ -451,10 +454,10 @@ public:
 	bool save(const std::string & fileName, MRC::Format format = Format::MRC);
 	std::string fileName()const { return std::string(); }
 	bool isOpened()const;
-	int width()const;           //first dimension
-	int height()const;          //second dimension
-	int slice()const;          //third dimension  z-axis
-	int propertyCount()const;
+    size_t width()const;           //first dimension
+    size_t height()const;          //second dimension
+    size_t slice()const;          //third dimension  z-axis
+    size_t propertyCount()const;
 	std::string propertyName(int index)const;
 	DataType propertyType(int index)const;
 	template<typename T> T property(int index)const;
@@ -470,7 +473,7 @@ private:
 	unsigned char hdBuffer[MRC_HEADER_SIZE];
 	MRCDataPrivate* m_d;
 	bool m_opened;
-private:
+    QFile file;
 
 	MRC(const std::string & fileName, bool opened) : m_d{ nullptr }, m_opened{ opened } { (void)fileName; }
 
@@ -484,6 +487,7 @@ private:
 	static inline void copyHeaderBuffer(unsigned char* dst, const unsigned char* src, int size);
 	size_t typeSize(MRC::DataType type) const;
 	std::string propertyInfoString(const MRCHeader *header)const;
+    bool readDataFromQFileHelper(const std::string& fileName);
 	bool readDataFromFileHelper(std::ifstream& in);
 	inline void detach();
 };
@@ -571,10 +575,10 @@ T* MRC::data() const
 		return nullptr;
 }
 inline void MRC::detach() { if (m_d != nullptr && --m_d->ref == 0)delete m_d; }
-inline void MRC::copyHeaderBuffer(unsigned char* dst, const unsigned char* src, int size) { memcpy(dst, src, size); }
+inline void MRC::copyHeaderBuffer(unsigned char* dst, const unsigned char* src, int size) { memcpy(dst, src, size_t(size)); }
 inline bool MRC::isOpened() const { return m_opened; }
-inline int MRC::width() const { return m_header.nx; }
-inline int MRC::height() const { return m_header.ny; }
-inline int MRC::slice() const { return m_header.nz; }
-inline int MRC::propertyCount() const { return 36; }
+inline size_t MRC::width() const { return size_t(m_header.nx); }
+inline size_t MRC::height() const { return size_t(m_header.ny); }
+inline size_t MRC::slice() const { return size_t(m_header.nz); }
+inline size_t MRC::propertyCount() const { return 36; }
 #endif // MRC_H
